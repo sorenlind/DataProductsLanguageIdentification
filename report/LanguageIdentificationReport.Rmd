@@ -1,0 +1,201 @@
+---
+title: "Language Classification"
+author: "Søren Lind Kristiansen"
+date: "11 December 2015"
+output: pdf_document
+---
+
+```{r courseProjectSetup, echo=FALSE, message=FALSE}
+set.seed(151211)
+library(knitr)
+library(caret)
+library(pander)
+library(xtable)
+library(doMC)
+library(htmlTable)
+
+registerDoMC(cores = 4)
+
+trainingFile <- "EuDataTrain.txt"
+validationFile <- "EuDataValidation.txt"
+testingFile <- "EuDataTest.txt"
+dataPath <- "../data"
+resultsPath <- "../results"
+
+# Reads and processed data containing only the relevant dates. Data will be downloaded and processed if
+# necessary.
+readData <- function(fileName) {
+  localFilePath <- file.path(dataPath, fileName)
+  message(getwd())
+  message(localFilePath)
+  raw.data <- read.table(localFilePath, header = TRUE, sep = "\t", skip = 0, nrows = 0, quote = "\"")
+  raw.data$Language <- factor(raw.data$Language)
+  raw.data
+}
+
+readTrainingFile <- function() {
+  readData(trainingFile)
+}
+
+readTestingFile <- function() {
+  readData(testingFile)
+}
+```
+
+```{r readData, cache=TRUE, echo=FALSE, message=FALSE}
+if (!file.exists(file.path(dataPath, trainingFile))) {
+  message("Unzipping data files...")
+  unzip(zipfile = file.path(dataPath, "DataFiles.zip"), exdir = dataPath)
+}
+
+message("Reading training data")
+trainSetRaw <- readTrainingFile()
+
+message("Reading test data")
+testSetRaw <- readTestingFile()
+```
+
+### Feature Selection ###
+
+```#{xr dataPreview, cache=TRUE, echo=FALSE}
+kable(trainingSet[c(25:27,165:167),c(1,6:11,160)], align = 'c')
+```
+
+## Model Training ##
+
+```{r experimentLoop, echo=FALSE, cache=TRUE, message=FALSE}
+inSampleDfFilePath <- file.path(resultsPath, 'inSampleMatrix.txt')
+outOfSampleDfFilePath <- file.path(resultsPath, 'outOfSampleMatrix.txt')
+
+mSequence = seq(from = 1000, to = 25000, by = 1000)
+nSequence = seq(from = 200, to = 2000, by = 200)
+
+createAccruacyMatrices <- function() {
+  
+  # Remove the character variable containing the sentences.
+  testSet <- testSetRaw[,-2]
+  trainSet <- trainSetRaw[,-2]
+  
+  inSampleMatrix <- matrix(data = 0.0, nrow = length(mSequence), ncol = length(nSequence))
+  outOfSampleMatrix <- matrix(data = 0.0, nrow = length(mSequence), ncol = length(nSequence))
+  
+  message("dimensions of results matrices: ", dim(inSampleMatrix)[1], ",", dim(inSampleMatrix)[2])
+  
+  mIndex <- 1
+  for (m in mSequence) {
+    
+    nIndex <- 1
+    for (n in nSequence) {
+      
+      message("m: ", m, ", n: ", n, appendLF=FALSE)
+  
+      trainingSubSet <- trainSet[1:m,1:n]
+    
+      parRFFit <- train(Language ~ .,
+                        method = "parRF",
+                        data = trainingSubSet,
+                        trControl = trainControl(method = "none"),
+                        tuneGrid = data.frame(mtry = 63))
+      
+      predictionsInSample <- predict(parRFFit, newdata = trainingSubSet)
+      cmatrixInSample <- confusionMatrix(predictionsInSample, trainingSubSet$Language)
+    
+      predictionsOutOfSample <- predict(parRFFit, newdata = testSet)
+      cmatrixOutOfSample <- confusionMatrix(predictionsOutOfSample, testSet$Language)
+      
+      inSampleAccuracy <- cmatrixInSample$overall[[1]]
+      outOfSampleAccuracy <- cmatrixOutOfSample$overall[[1]]
+      
+      inSampleMatrix[mIndex, nIndex] <- inSampleAccuracy
+      outOfSampleMatrix[mIndex, nIndex] <- outOfSampleAccuracy
+      
+      nIndex <- nIndex + 1
+      
+      message(" - done! isAcc: ", inSampleAccuracy, " oosAcc: ", outOfSampleAccuracy)
+    }
+    
+    mIndex <- mIndex + 1
+  }
+
+  # Create data frames, add column names and save to disk
+  inSampleDf <- as.data.frame(inSampleMatrix)
+  outOfSampleDf <- as.data.frame(outOfSampleMatrix)
+  
+  colnames(inSampleDf) <- sapply(nSequence, FUN = function(x) paste("n.", x, sep = ''))
+  rownames(inSampleDf) <- sapply(mSequence, FUN = function(x) paste("m.", x, sep = ''))
+  
+  colnames(outOfSampleDf) <- sapply(nSequence, FUN = function(x) paste("n.", x, sep = ''))
+  rownames(outOfSampleDf) <- sapply(mSequence, FUN = function(x) paste("m.", x, sep = ''))
+  
+  write.table(inSampleDf, inSampleDfFilePath)
+  write.table(outOfSampleDf, outOfSampleDfFilePath)
+
+}
+
+if (!file.exists(inSampleDfFilePath)) {
+  message("Could not find results file. Will retrain. This may take several days.")
+  createAccruacyMatrices()
+}
+
+inSampleDf <- read.table(file = inSampleDfFilePath)
+outOfSampleDf <- read.table(file = outOfSampleDfFilePath)
+```
+
+```{r plot1, echo=TRUE, cache=TRUE, message=FALSE}
+plot(nSequence, outOfSampleDf[20,])
+```
+
+## Where Is The Beef? ##
+```{r beefTrain, echo=FALSE, cache=TRUE, message=FALSE}
+# Create a raw data set identical to the largest set previously trained on.
+trainRawBig <- trainSetRaw[1:25000,]
+
+# Create a training set without the original sentence text
+trainBig <- trainRawBig[,-2]
+
+# Train a classifier like the biggest one we previously created.
+parRFFitBig <- train(Language ~ .,
+                     method = "parRF",
+                     data = trainBig,
+                     trControl = trainControl(method = "none"),
+                     tuneGrid = data.frame(mtry = 63))
+```
+
+```{r beefPredict, echo=FALSE, cache=TRUE, message=FALSE}
+# Create in-sample predictions
+predictionsInSample <- predict(parRFFitBig, newdata = trainBig)
+
+# Find the data points which we classify incorrectly
+wrongInSample <- predictionsInSample != trainBig$Language
+
+# Create in-sample predictions
+predictionsOutOfSample <- predict(parRFFitBig, newdata = testSetRaw)
+
+# Find the data points which we classify incorrectly
+wrongOutOfSample <- predictionsOutOfSample != testSetRaw$Language
+```
+
+```{r beefPrint, echo=FALSE, cache=TRUE, message=FALSE}
+inSampleResults <- cbind(predictionsInSample, trainRawBig[,1:2])[wrongInSample,]
+names(inSampleResults) <- c("Prediction", "Actual", "Text")
+kable(inSampleResults, align = 'r')
+```
+
+```{r outOfSamplePrint, echo=FALSE, cache=TRUE, message=FALSE}
+outOfSampleResults <- cbind(predictionsOutOfSample, testSetRaw[,1:2])[wrongOutOfSample,]
+names(outOfSampleResults) <- c("Prediction", "Actual", "Text")
+kable(outOfSampleResults, align = 'r')
+```
+
+```{r outOfSampleErrorHist, echo=FALSE, cache=TRUE, message=FALSE}
+wordCounts <- sapply(strsplit(as.character(outOfSampleResults$Text), " "), FUN = length)
+hist(wordCounts)
+```
+
+```{r inSampleAccTable, echo=FALSE, cache=TRUE, message=FALSE}
+kable(round(inSampleDf, 4))
+```
+
+```{r outOfSampleAccTable, echo=FALSE, cache=TRUE, message=FALSE}
+kable(outOfSampleDf)
+```
