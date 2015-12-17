@@ -21,5 +21,4 @@ vignettes/*.pdf
 *_cache/
 *_files/
 
-data/*
-submission/*
+data/*.txt
