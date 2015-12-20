@@ -17,6 +17,8 @@ library(reshape2)
 
 registerDoMC(cores = 4)
 
+panderOptions('table.alignment.default', 'left')
+
 trainingFile <- "EuDataTrain.txt"
 validationFile <- "EuDataValidation.txt"
 testingFile <- "EuDataTest.txt"
@@ -226,11 +228,11 @@ outOfSampleErrorsDf <- read.table(file = outOfSampleErrorsFilePath)
 
 
 ```{r beefPrint, echo=FALSE, cache=FALSE, message=FALSE}
-kable(inSampleErrorsDf, align = 'r')
+pander(inSampleErrorsDf)
 ```
 
 ```{r outOfSamplePrint, echo=FALSE, cache=FALSE, message=FALSE}
-kable(outOfSampleErrorsDf, align = 'r')
+pander(outOfSampleErrorsDf, align = 'r')
 ```
 
 ```{r outOfSampleErrorHist, echo=FALSE, cache=FALSE, message=FALSE}
