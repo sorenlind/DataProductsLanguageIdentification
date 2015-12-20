@@ -192,14 +192,31 @@ if (!file.exists(inSampleErrorsFilePath)) {
   # Find the data points which we classify incorrectly
   wrongOutOfSample <- predictionsOutOfSample != testSetRaw$Language
   
+  languages <- c("Danish",
+                 "Dutch",
+                 "English",
+                 "Finnish",
+                 "French",
+                 "German",
+                 "Greek",
+                 "Italian",
+                 "Portuguese",
+                 "Spanish",
+                 "Norwegian",
+                 "Swedish")
+  
   message("Saving in-sample predictions errors")
   inSampleResults <- cbind(predictionsInSample, trainRawBig[,1:2])[wrongInSample,]
   names(inSampleResults) <- c("Prediction", "Actual", "Text")
+  inSampleResults$Prediction <- languages[inSampleResults$Prediction]
+  inSampleResults$Actual <- languages[inSampleResults$Actual]
   write.table(inSampleResults, inSampleErrorsFilePath)
   
   message("Saving out-of-sample predictions errors")
   outOfSampleResults <- cbind(predictionsOutOfSample, testSetRaw[,1:2])[wrongOutOfSample,]
   names(outOfSampleResults) <- c("Prediction", "Actual", "Text")
+  outOfSampleResults$Prediction <- languages[outOfSampleResults$Prediction]
+  outOfSampleResults$Actual <- languages[outOfSampleResults$Actual]
   write.table(outOfSampleResults, outOfSampleErrorsFilePath)
 }
 
