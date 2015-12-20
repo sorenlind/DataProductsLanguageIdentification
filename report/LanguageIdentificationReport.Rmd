@@ -13,12 +13,15 @@ library(pander)
 library(xtable)
 library(doMC)
 library(htmlTable)
+library(reshape2)
 
 registerDoMC(cores = 4)
 
 trainingFile <- "EuDataTrain.txt"
 validationFile <- "EuDataValidation.txt"
 testingFile <- "EuDataTest.txt"
+inSampleErrorsFile <- 'inSampleErrors.txt'
+outOfSampleErrorsFile <- 'outOfSampleErrors.txt'
 dataPath <- "../data"
 resultsPath <- "../results"
 
@@ -146,56 +149,96 @@ plot(nSequence, outOfSampleDf[20,])
 ```
 
 ## Where Is The Beef? ##
-```{r beefTrain, echo=FALSE, cache=TRUE, message=FALSE}
-# Create a raw data set identical to the largest set previously trained on.
-trainRawBig <- trainSetRaw[1:25000,]
+```{r buildErrorFiles, echo=FALSE, cache=TRUE, message=FALSE}
+inSampleErrorsFilePath <- file.path(resultsPath, inSampleErrorsFile)
+outOfSampleErrorsFilePath <- file.path(resultsPath, outOfSampleErrorsFile)
 
-# Create a training set without the original sentence text
-trainBig <- trainRawBig[,-2]
+if (!file.exists(inSampleErrorsFilePath)) {
 
-# Train a classifier like the biggest one we previously created.
-parRFFitBig <- train(Language ~ .,
-                     method = "parRF",
-                     data = trainBig,
-                     trControl = trainControl(method = "none"),
-                     tuneGrid = data.frame(mtry = 63))
+  randomForestFilePath <- file.path(resultsPath, 'randomForest.Rdata')
+  
+  # Create a raw data set identical to the largest set previously trained on.
+  trainRawBig <- trainSetRaw[1:25000,]
+  
+  # Create a training set without the original sentence text
+  trainBig <- trainRawBig[,-2]
+  
+  if (!file.exists(randomForestFilePath)) {
+    message("Training random forest...")
+    
+    # Train a classifier like the biggest one we previously created.
+    parRFFitBig <- train(Language ~ .,
+                         method = "parRF",
+                         data = trainBig,
+                         trControl = trainControl(method = "none"),
+                         tuneGrid = data.frame(mtry = 63))
+    save(parRFFitBig, file = randomForestFilePath)
+  }
+  
+  message("Loading random forest...")
+  load(randomForestFilePath)
+  
+  message("Finding Prediction Errors")
+
+  # Create in-sample predictions
+  predictionsInSample <- predict(parRFFitBig, newdata = trainBig)
+  
+  # Find the data points which we classify incorrectly
+  wrongInSample <- predictionsInSample != trainBig$Language
+  
+  # Create in-sample predictions
+  predictionsOutOfSample <- predict(parRFFitBig, newdata = testSetRaw)
+  
+  # Find the data points which we classify incorrectly
+  wrongOutOfSample <- predictionsOutOfSample != testSetRaw$Language
+  
+  message("Saving in-sample predictions errors")
+  inSampleResults <- cbind(predictionsInSample, trainRawBig[,1:2])[wrongInSample,]
+  names(inSampleResults) <- c("Prediction", "Actual", "Text")
+  write.table(inSampleResults, inSampleErrorsFilePath)
+  
+  message("Saving out-of-sample predictions errors")
+  outOfSampleResults <- cbind(predictionsOutOfSample, testSetRaw[,1:2])[wrongOutOfSample,]
+  names(outOfSampleResults) <- c("Prediction", "Actual", "Text")
+  write.table(outOfSampleResults, outOfSampleErrorsFilePath)
+}
+
+inSampleErrorsDf <- read.table(file = inSampleErrorsFilePath)
+outOfSampleErrorsDf <- read.table(file = outOfSampleErrorsFilePath)
 ```
 
-```{r beefPredict, echo=FALSE, cache=TRUE, message=FALSE}
-# Create in-sample predictions
-predictionsInSample <- predict(parRFFitBig, newdata = trainBig)
 
-# Find the data points which we classify incorrectly
-wrongInSample <- predictionsInSample != trainBig$Language
-
-# Create in-sample predictions
-predictionsOutOfSample <- predict(parRFFitBig, newdata = testSetRaw)
-
-# Find the data points which we classify incorrectly
-wrongOutOfSample <- predictionsOutOfSample != testSetRaw$Language
+```{r beefPrint, echo=FALSE, cache=FALSE, message=FALSE}
+kable(inSampleErrorsDf, align = 'r')
 ```
 
-```{r beefPrint, echo=FALSE, cache=TRUE, message=FALSE}
-inSampleResults <- cbind(predictionsInSample, trainRawBig[,1:2])[wrongInSample,]
-names(inSampleResults) <- c("Prediction", "Actual", "Text")
-kable(inSampleResults, align = 'r')
+```{r outOfSamplePrint, echo=FALSE, cache=FALSE, message=FALSE}
+kable(outOfSampleErrorsDf, align = 'r')
 ```
 
-```{r outOfSamplePrint, echo=FALSE, cache=TRUE, message=FALSE}
-outOfSampleResults <- cbind(predictionsOutOfSample, testSetRaw[,1:2])[wrongOutOfSample,]
-names(outOfSampleResults) <- c("Prediction", "Actual", "Text")
-kable(outOfSampleResults, align = 'r')
-```
-
-```{r outOfSampleErrorHist, echo=FALSE, cache=TRUE, message=FALSE}
-wordCounts <- sapply(strsplit(as.character(outOfSampleResults$Text), " "), FUN = length)
+```{r outOfSampleErrorHist, echo=FALSE, cache=FALSE, message=FALSE}
+wordCounts <- sapply(strsplit(as.character(outOfSampleErrorsDf$Text), " "), FUN = length)
 hist(wordCounts)
 ```
 
-```{r inSampleAccTable, echo=FALSE, cache=TRUE, message=FALSE}
+```{r inSampleAccTable, echo=FALSE, cache=FALSE, message=FALSE}
 kable(round(inSampleDf, 4))
 ```
 
-```{r outOfSampleAccTable, echo=FALSE, cache=TRUE, message=FALSE}
+```{r outOfSampleAccTable, echo=FALSE, cache=FALSE, message=FALSE}
 kable(outOfSampleDf)
+```
+
+
+```{r levelPlot, echo=FALSE, cache=TRUE, message=FALSE}
+outTemp <- outOfSampleDf
+names(outTemp) <- seq(from = 200, to = 2000, by = 200)
+outTemp$trainCount <- seq(from = 1000, to = 25000, by = 1000)
+outTempMelt <- melt(data = outTemp, id.vars = "trainCount")
+levelplot(value ~ trainCount*variable,
+          data = outTempMelt,
+          xlab = "Number of training examples", ylab = "Number of features",
+          main = "Language Identification Accuracy",
+          col.regions = terrain.colors(100))
+
 ```
