@@ -1,9 +1,12 @@
 library(shiny)
+library(markdown)
 
 shinyUI(
   navbarPage(
     "Language Identification",
-    tabPanel("Intro", verbatimTextOutput("summary")),
+    tabPanel("Intro",
+             includeMarkdown("intro.md")
+             ),
              
     tabPanel("No. of Examples",
             sidebarLayout(
@@ -83,9 +86,7 @@ shinyUI(
       dataTableOutput(outputId="tableOutOfSampleErrors"),
       h3("Histogram of Sentence Length for Wrong Predictions"),
       plotOutput("errorHistogram")
-      ),
-    tabPanel("Try-it!", p("summary"))
-
+      )
     )
   )
 
