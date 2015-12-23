@@ -22,3 +22,4 @@ vignettes/*.pdf
 *_files/
 
 data/*.txt
+results/model_*.Rdata
