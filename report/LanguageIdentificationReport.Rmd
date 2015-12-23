@@ -97,6 +97,10 @@ createAccruacyMatrices <- function() {
                         trControl = trainControl(method = "none"),
                         tuneGrid = data.frame(mtry = 63))
       
+      modelFilename <- file.path(resultsPath, paste("model_m", m, "_n", n, ".Rdata", sep = ""))
+      message("Writing :", modelFilename)
+      save(parRFFit, file = modelFilename)
+
       predictionsInSample <- predict(parRFFit, newdata = trainingSubSet)
       cmatrixInSample <- confusionMatrix(predictionsInSample, trainingSubSet$Language)
     
