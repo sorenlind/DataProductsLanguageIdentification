@@ -5,8 +5,7 @@ library(ggplot2)
 set.seed(151220)
 
 testingFile <- "EuDataTest.txt"
-dataPath <- "../data"
-resultsPath <- "../results"
+resultsPath <- "./results"
 inSampleDfFilePath <- file.path(resultsPath, 'inSampleMatrix.txt')
 outOfSampleDfFilePath <- file.path(resultsPath, 'outOfSampleMatrix.txt')
 
@@ -104,15 +103,6 @@ createBasicPlot <- function(plotData, title, plotType, xLabel) {
   }
   
   g
-}
-
-readData <- function(fileName) {
-  localFilePath <- file.path(dataPath, fileName)
-  message(getwd())
-  message(localFilePath)
-  raw.data <- read.table(localFilePath, header = TRUE, sep = "\t", skip = 0, nrows = 0, quote = "\"")
-  raw.data$Language <- factor(raw.data$Language)
-  raw.data
 }
 
 createInSampleTable <- function(input) {

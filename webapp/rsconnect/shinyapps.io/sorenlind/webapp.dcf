@@ -1,0 +1,8 @@
+name: webapp
+account: sorenlind
+server: shinyapps.io
+bundleId: 338891
+url: https://sorenlind.shinyapps.io/webapp
+when: 1451138881.75802
+asMultiple: FALSE
+asStatic: FALSE
