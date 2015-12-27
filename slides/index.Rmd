@@ -1,0 +1,146 @@
+---
+title       : Language Identification 
+subtitle    : Using Random Forests To Identify Language of EU Proceedings
+author      : Søren Lind Kristiansen
+job         : Software Developer
+framework   : io2012   # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+<style>
+.title-slide {
+  background-color: #EDEDFF;
+}
+
+.title-slide hgroup > h1, 
+.title-slide hgroup > h2 {
+  color: #222244;
+}
+
+</style>
+
+## Language Identification 
+
+* Using Random Forests To Identify Language of EU Proceedings
+* Sentence-based identification (no need for long texts)
+* Features used are N-grams, inspired by the TextCat algorithm by Cavnar and Trenkle.
+* Simple web app for analysis found at http://sorenlind.shinyapps.io/webapp 
+* Source code for web app and slides available on [GitHub](https://github.com/sorenlind/DataProductsLanguageIdentification)
+
+--- &vcenter
+
+## High Accuracy
+
+When trained on 25,000 sentences, using 2000 features, an out-of-sample accuracy >99% is achieved.
+
+```{r levelPlot, echo=FALSE, cache=TRUE, message=FALSE, fig.width=10,fig.height=5,fig.align="center"}
+library(reshape2)
+library(lattice)
+
+resultsPath <- "../results"
+inSampleDfFilePath <- file.path(resultsPath, 'inSampleMatrix.txt')
+outOfSampleDfFilePath <- file.path(resultsPath, 'outOfSampleMatrix.txt')
+inSampleDf <- read.table(file = inSampleDfFilePath)
+outOfSampleDf <- read.table(file = outOfSampleDfFilePath)
+
+outTemp <- outOfSampleDf
+names(outTemp) <- seq(from = 200, to = 2000, by = 200)
+outTemp$trainCount <- seq(from = 1000, to = 25000, by = 1000)
+outTempMelt <- melt(data = outTemp, id.vars = "trainCount")
+levelplot(value ~ trainCount*variable,
+          data = outTempMelt,
+          xlab = "Number of training examples", ylab = "Number of features",
+          main = "Language Identification Accuracy",
+          col.regions = terrain.colors(100))
+```
+
+--- &vcenter
+
+## Plot Accuracy vs Number of Features or Number of Examples
+
+* Web app lets you lot plot the accuracy against either the number of features or the number of training examples.
+
+
+```{r ggplot, echo=FALSE, cache=TRUE, message=FALSE, fig.width=14,fig.height=5,fig.align="center"}
+library(ggplot2)
+library(gridExtra)
+
+noTrainExamples <- 1000
+noFeatures <- 200
+plotType <- "l"
+
+
+createAccVsMPlot <- function() {
+  iPlotData <- data.frame(cbind(seq(from = 1000, to = 25000, by = 1000), inSampleDf[,noFeatures / 200]))
+  colnames(iPlotData) <- c("x", "acc")
+  iPlotData$variable <- "In-Sample"
+  
+  oPlotData <- data.frame(cbind(seq(from = 1000, to = 25000, by = 1000), outOfSampleDf[,noFeatures / 200]))
+  colnames(oPlotData) <- c("x", "acc")
+  oPlotData$variable <- "Out-of-Sample"
+  
+  plotData <- rbind(iPlotData, oPlotData)
+  title <- paste("Accuracy vs Number of Training Examples.", noFeatures , "features")
+  g <- createBasicPlot(plotData, title, plotType, "Number of Training Examples")
+  g <- g + coord_cartesian(ylim = c(0.94, 1.002))
+  g
+}
+
+
+createAccVsNPlot <- function() {
+  iPlotData <- data.frame(cbind(seq(from = 200, to = 2000, by = 200)), t(inSampleDf[noTrainExamples / 1000 ,])) 
+  colnames(iPlotData) <- c("x", "acc")
+  iPlotData$variable <- "In-Sample"
+  rownames(iPlotData) <- NULL
+  
+  oPlotData <- data.frame(cbind(seq(from = 200, to = 2000, by = 200)), t(outOfSampleDf[noTrainExamples / 1000 ,])) 
+  colnames(oPlotData) <- c("x", "acc")
+  oPlotData$variable <- "Out-of-Sample"
+  rownames(oPlotData) <- NULL
+  
+  plotData <- rbind(iPlotData, oPlotData)
+  title <- paste("Accuracy vs Number of Features.", noTrainExamples , "training examples.")
+  g <- createBasicPlot(plotData, title, plotType, "Number of Features")
+  g <- g + coord_cartesian(ylim = c(0.94, 1.002))
+  g
+}
+
+createBasicPlot <- function(plotData, title, plotType, xLabel) {
+  g <- ggplot(data = as.data.frame(plotData), aes(x=x, y=acc)) +
+    xlab(xLabel) + 
+    ylab("Accuracy") + 
+    theme(legend.title=element_blank()) + 
+    ggtitle(title) +
+    theme(plot.title = element_text(lineheight=.8, face="bold"))
+  
+  if (plotType == "l") {
+    g <- g + geom_line(aes(colour=variable))
+  } else {
+    g <- g + geom_point(aes(colour=variable))
+  }
+  
+  g
+}
+
+randomvals<-rnorm(75,5,.5)
+p1 <- createAccVsMPlot()
+p2 <- createAccVsNPlot()
+grid.arrange(p1, p2, ncol=2)
+```
+
+
+---
+
+## Fun Fact - Where is the Beef?
+
+The in-sample accuracy is less than 1.0 when training on thousands of examples. This may point to underfitting. But in this case it does not. Instead, it is caused by errors in the training data. A few of the non-English training examples contain English text which the classifier correctly indentifies as English. Since these sentences are labeled as non-English they show up as errors. In other words, running the classifier on the training data reveals errors in the training data!
+
+```{r buildErrorFiles, echo=TRUE, cache=TRUE, message=FALSE}
+inSampleErrorsFilePath <- file.path(resultsPath, 'inSampleErrors.txt')
+inSampleErrorsDf <- read.table(file = inSampleErrorsFilePath)
+kable(inSampleErrorsDf)
+```
+

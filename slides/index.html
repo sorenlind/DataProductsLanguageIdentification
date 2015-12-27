@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Language Identification</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Language Identification">
+  <meta name="author" content="Søren Lind Kristiansen">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Language Identification</h1>
+    <h2>Using Random Forests To Identify Language of EU Proceedings</h2>
+    <p>Søren Lind Kristiansen<br/>Software Developer</p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <article data-timings="">
+    <style>
+.title-slide {
+  background-color: #EDEDFF;
+}
+
+.title-slide hgroup > h1, 
+.title-slide hgroup > h2 {
+  color: #222244;
+}
+
+</style>
+
+<h2>Language Identification</h2>
+
+<ul>
+<li>Using Random Forests To Identify Language of EU Proceedings</li>
+<li>Sentence-based identification (no need for long texts)</li>
+<li>Features used are N-grams, inspired by the TextCat algorithm by Cavnar and Trenkle.</li>
+<li>Simple web app for analysis found at <a href="http://sorenlind.shinyapps.io/webapp">http://sorenlind.shinyapps.io/webapp</a> </li>
+<li>Source code for web app and slides available on <a href="https://github.com/sorenlind/DataProductsLanguageIdentification">GitHub</a></li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2">
+<hgroup>
+  <h2>High Accuracy</h2>
+</hgroup>
+<article class = 'flexbox vcenter'>
+<p>When trained on 25,000 sentences, using 2000 features, an out-of-sample accuracy &gt;99% is achieved.</p>
+
+<p><img src="assets/fig/levelPlot-1.png" title="plot of chunk levelPlot" alt="plot of chunk levelPlot" style="display: block; margin: auto;" /></p>
+
+</article>
+<!-- Presenter Notes -->
+</slide>
+<slide class="" id="slide-3">
+<hgroup>
+  <h2>Plot Accuracy vs Number of Features or Number of Examples</h2>
+</hgroup>
+<article class = 'flexbox vcenter'>
+<ul>
+<li>Web app lets you lot plot the accuracy against either the number of features or the number of training examples.</li>
+</ul>
+
+<p><img src="assets/fig/ggplot-1.png" title="plot of chunk ggplot" alt="plot of chunk ggplot" style="display: block; margin: auto;" /></p>
+
+</article>
+<!-- Presenter Notes -->
+</slide>
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>Fun Fact - Where is the Beef?</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>The in-sample accuracy is less than 1.0 when training on thousands of examples. This may point to underfitting. But in this case it does not. Instead, it is caused by errors in the training data. A few of the non-English training examples contain English text which the classifier correctly indentifies as English. Since these sentences are labeled as non-English they show up as errors. In other words, running the classifier on the training data reveals errors in the training data!</p>
+
+<pre><code class="r">inSampleErrorsFilePath &lt;- file.path(resultsPath, &#39;inSampleErrors.txt&#39;)
+inSampleErrorsDf &lt;- read.table(file = inSampleErrorsFilePath)
+kable(inSampleErrorsDf)
+</code></pre>
+
+<table><thead>
+<tr>
+<th align="left"></th>
+<th align="left">Prediction</th>
+<th align="left">Actual</th>
+<th align="left">Text</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">5108</td>
+<td align="left">English</td>
+<td align="left">Norwegian</td>
+<td align="left">Where is the beef</td>
+</tr>
+<tr>
+<td align="left">12355</td>
+<td align="left">English</td>
+<td align="left">Finnish</td>
+<td align="left">Where is the beef</td>
+</tr>
+</tbody></table>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='NA'>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='High Accuracy'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Plot Accuracy vs Number of Features or Number of Examples'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Fun Fact - Where is the Beef?'>
+         4
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
