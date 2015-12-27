@@ -10,7 +10,7 @@ This web app lets you analyze the results from using a radom forest to identify 
 
 ## Experimental Setup ##
 
-This experiment is inspired by the TextCat algorithm was published in the paper [N-Gram-Based Text Categorization](http://odur.let.rug.nl/vannoord/TextCat/textcat.pdf) by Cavnar and Trenkle. For this experiment we did not use the actual TextCat algorithm. Instead we use random forests but the features we fed to the random forests were inspired by TextCat. Therefore it makes sense to briefly look at the TextCat algorithm.
+This experiment is inspired by the TextCat algorithm was published in the paper <a href="http://odur.let.rug.nl/vannoord/TextCat/textcat.pdf" target="_blank">N-Gram-Based Text Categorization</a> by Cavnar and Trenkle. For this experiment we did not use the actual TextCat algorithm. Instead we use random forests but the features we fed to the random forests were inspired by TextCat. Therefore it makes sense to briefly look at the TextCat algorithm.
 
 ### TextCat ###
 The TextCat algorithm is quite simple but performs extremely well. In very broad terms, the algorithm creates a *profile* for each known language. Then, when a new text is to be classified, a profile is created for that text and compared to the profile for each known language to calculate a distance between the language profile and the profile of the new text. The language with the least distance to the new text is the predicted language of the text.
@@ -21,7 +21,7 @@ Let's take the Danish text `Jeg spiser rødgrød med fløde`. The 1-grams we can
 
 Initially a profile is created for each language that the system must be able to identify. Ideally this is done on a rather long text.
 
-When comparing the profile of a language to that of a new piece of text, the rank of each N-gram is compared between the two profiles. For example if one N-gram is the top item in the language profile but the 3rd item in the text profile, there's a rank difference of 3-1 = 2. The sum of differences for each N-gram is the distance between the two N-grams. For further details, see the [original paper](http://odur.let.rug.nl/vannoord/TextCat/textcat.pdf) by Cavnar and Trenkle.
+When comparing the profile of a language to that of a new piece of text, the rank of each N-gram is compared between the two profiles. For example if one N-gram is the top item in the language profile but the 3rd item in the text profile, there's a rank difference of 3-1 = 2. The sum of differences for each N-gram is the distance between the two N-grams. For further details, see the <a href="http://odur.let.rug.nl/vannoord/TextCat/textcat.pdf" target="_blank">original paper</a> by Cavnar and Trenkle.
 
 ### Random Forests ###
 One caveat of the TextCat algorithm is that it performs less well on very short texts. This is not very surprising, and obviously, if the texts are very short it is sometimes impossible to determine the language since a sentence can be valid in more than one language. 
@@ -32,7 +32,7 @@ Before we started training, we chose 2000 N-grams which we used for the basis of
 
 It is not completely trivial to choose the 2000 N-grams used for the features. One initial idea may be to choose the 2000 most frequent N-grams across all languages. But if an N-gram is frequent for all languages, it is not a very good predictor for what language a text is. We might then think of using the *least* frequent N-grams but this comes with the obvious problem that since the N-grams are rare, most sentences will not contain them and thus we will have to include many features to increase the change that the sentence actually contains some of the N-grams. The approach we chose was to initially pick the most 1000 frequent N-grams for each language. Among the union of these we then picked the 2000 N-grams with highest variance across the languages.
 
-The preprocessing step which both determined what features to use and calculated the value of each feature for both training and test data was done in C#. The training and prediction using the random forest was done in R using the Caret package. This web app was created using R and Shiny. The R code for the training and prediction as well as the R code for this web app is available on GitHub [here](https://github.com/sorenlind/DataProductsLanguageIdentification).
+The preprocessing step which both determined what features to use and calculated the value of each feature for both training and test data was done in C#. The training and prediction using the random forest was done in R using the Caret package. This web app was created using R and Shiny. The R code for the training and prediction as well as the R code for this web app is available on GitHub <a href="https://github.com/sorenlind/DataProductsLanguageIdentification" target="_blank">here</a>.
 
 ### Data ###
 The texts we chose to use for training and testing are from European Parliament Proceedings. These are available in the following 11 languages:
@@ -49,6 +49,9 @@ The texts we chose to use for training and testing are from European Parliament 
 * Spanish
 * Swedish
 
-They are freely available [here](http://nltk.ldc.upenn.edu/packages/corpora/). More info is available [here](http://www.statmt.org/europarl/).
+They are freely available <a href="http://nltk.ldc.upenn.edu/packages/corpora/" target="_blank">here</a>. More info is available <a href="http://www.statmt.org/europarl/" target="_blank">here</a>.
+
+
+
 
 
