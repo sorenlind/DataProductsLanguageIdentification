@@ -27,7 +27,8 @@ knit        : slidify::knit2slides
 * Using Random Forests To Identify Language of EU Proceedings
 * Sentence-based identification (no need for long texts)
 * Features used are N-grams, inspired by the TextCat algorithm by Cavnar and Trenkle.
-* Simple web app for analysis found at http://sorenlind.shinyapps.io/webapp 
+* Simple web app for analysis found at http://sorenlind.shinyapps.io/webapp
+* Slides available on [GitHub pages](http://sorenlind.github.io/DataProductsLanguageIdentificationSlides/)
 * Source code for web app and slides available on [GitHub](https://github.com/sorenlind/DataProductsLanguageIdentification)
 
 --- &vcenter
